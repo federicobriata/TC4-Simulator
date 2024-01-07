@@ -12,7 +12,7 @@
 
 #include <Arduino.h>
 #include <SoftwareSerial.h>
-#include <MAX6675.h>
+#include "max6675.h"
 #include "SevSeg.h"
 
 float averageTemperature ( float *);
@@ -21,11 +21,11 @@ void handleArtisanCommands( void );
 #define PRINT_TEAMPERATURE_EACH_READING     1	    // Set, to print temperature vaule on serial debug port
 #define PRINT_ARTISAN_WHOLE_MESSAGE	    	0       // set, to print Artisan commands on serial debug port
 #define ENVIRONMENT_TEMPERATURE_EXIST       1       // Set, if you installed ET thermal couple 
-#define SEGMENT_DISPLAY_EXIST               1       // Set, if you installed 7-Segment Display
+#define SEGMENT_DISPLAY_EXIST               0       // Set, if you installed 7-Segment Display
 
-#define SCK_PIN       13      // D13, PB5
-#define SO_PIN 	      12      // D12, PB4
-#define CS_BT_PIN     10      // D10, PB2
+#define SCK_PIN       4
+#define SO_PIN 	      6
+#define CS_BT_PIN     5
 #define CS_ET_PIN     9       // D9,  PB1
 #define SOFT_TX       8       // D8,  PB0
 #define SOFT_RX       7       // D7,  PD7
@@ -51,12 +51,12 @@ bool		abnormalValue = false;                  // indicate temperature value is u
 unsigned long 	previousMillis = 0;    	           	// store last time of temperature reading
 
 // Create objects for Beam Temperature (BT) and Environment Temperature (ET)
-MAX6675 BT_Thermocouple(CS_BT_PIN);
+MAX6675 BT_Thermocouple(SCK_PIN, CS_BT_PIN, SO_PIN);
 
 // Variables for Environment Temperature if exist
 #if ENVIRONMENT_TEMPERATURE_EXIST
 float		ET_CurTemp = 0.0;
-MAX6675 ET_Thermocouple(CS_ET_PIN);
+MAX6675 ET_Thermocouple(SCK_PIN, CS_ET_PIN, SO_PIN);
 #endif
 
 #if SEGMENT_DISPLAY_EXIST
@@ -99,7 +99,7 @@ void loop() {
 	    previousMillis = currentMillis;
 
       	// read BT from MAX6675 thermal couple
-      	BT_CurTemp = BT_Thermocouple.readTempC();
+      	BT_CurTemp = BT_Thermocouple.readCelsius();
 
 	    if ( isReady ) {
         	// means, first round of temperature array is done, can do averaging and filter out operation  
@@ -153,7 +153,7 @@ void loop() {
 #if ENVIRONMENT_TEMPERATURE_EXIST
           		// The ET is reference temperature, don't need averaging
           		// just read ET from MAX6675 thermal couple every 3 seconds
-          		ET_CurTemp = ET_Thermocouple.readTempC();
+          		ET_CurTemp = ET_Thermocouple.readCelsius();
 #if PRINT_TEAMPERATURE_EACH_READING           
           		SerialDebug.print(" ");	
           		SerialDebug.print("ET: ");
@@ -201,11 +201,11 @@ void handleArtisanCommands() {
 			  	Serial.print(ET_CurTemp);					// channel 1 : Environment Temperature (ET) with degree Celsius
       		else 
       			Serial.print(ET_CurTemp * 9.0/5.0 + 32);	// channel 1 : Environment Temperature (ET) with degree Farenheit
-#else
-      		if (unit_C)
-			  	Serial.print(BT_AvgTemp);			        // channel 1 : Environment Temperature (ET); no ET sensor, so uses BT instead	
-      		else
-        		Serial.print(BT_AvgTemp * 9.0/5.0 + 32);	// channel 1 : Environment Temperature (ET); no ET sensor, so uses BT instead	
+//#else
+//      		if (unit_C)
+//			  	Serial.print(BT_AvgTemp);			        // channel 1 : Environment Temperature (ET); no ET sensor, so uses BT instead	
+//      		else
+//        		Serial.print(BT_AvgTemp * 9.0/5.0 + 32);	// channel 1 : Environment Temperature (ET); no ET sensor, so uses BT instead	
 #endif      				 
     		Serial.print(",");		
       		if (unit_C)		
